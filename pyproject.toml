@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atwork"
+dynamic = ["version"]
+description = "Exit 0 during working hours, 1 otherwise; for gating cron jobs on holidays"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+atwork = "atwork.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/profcturner/atwork"
+
+[tool.setuptools.dynamic]
+version = { attr = "atwork.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
