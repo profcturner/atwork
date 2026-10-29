@@ -25,10 +25,15 @@ ERROR = 2
 
 DAY_NAMES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
-DEFAULT_CONFIG_PATHS = [
-    Path("~/.config/atwork/atwork.conf"),
-    Path("/etc/atwork.conf"),
-]
+SYSTEM_CONFIG = Path("/etc/atwork/atwork.conf")
+
+
+def default_config_paths() -> list[Path]:
+    """Per-user config (XDG base directory spec), then system-wide config."""
+    xdg = os.environ.get("XDG_CONFIG_HOME", "").strip()
+    # The spec says a relative XDG_CONFIG_HOME is invalid and must be ignored.
+    base = Path(xdg) if xdg and Path(xdg).is_absolute() else Path("~/.config").expanduser()
+    return [base / "atwork" / "atwork.conf", SYSTEM_CONFIG]
 
 
 class ConfigError(Exception):
@@ -101,8 +106,7 @@ def find_config(explicit: str | None) -> Path | None:
     env = os.environ.get("ATWORK_CONFIG")
     if env:
         return find_config(env)
-    for candidate in DEFAULT_CONFIG_PATHS:
-        path = candidate.expanduser()
+    for path in default_config_paths():
         if path.is_file():
             return path
     return None
@@ -203,7 +207,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--time", metavar="HH:MM", help="check this time instead of now")
     p.add_argument("-c", "--config", metavar="FILE",
                    help="config file (default: $ATWORK_CONFIG, "
-                        "~/.config/atwork/atwork.conf, then /etc/atwork.conf)")
+                        "$XDG_CONFIG_HOME/atwork/atwork.conf, then /etc/atwork/atwork.conf)")
     p.add_argument("--no-config", action="store_true", help="do not read any config file")
     p.add_argument("-v", "--verbose", action="store_true", help="print the reason")
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")

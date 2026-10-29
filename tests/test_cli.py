@@ -115,3 +115,43 @@ def test_shell_chaining():
     xmas = subprocess.run([*base, "--date", "2026-12-25"], env=env)
     assert work.returncode == 0
     assert xmas.returncode == 1
+
+
+def test_xdg_config_home(tmp_path, monkeypatch):
+    conf_dir = tmp_path / "xdg" / "atwork"
+    conf_dir.mkdir(parents=True)
+    (conf_dir / "atwork.conf").write_text("[atwork]\ndays = sat\n")
+    monkeypatch.delenv("ATWORK_CONFIG", raising=False)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    assert main(["--date", "2026-10-31", "--time", "10:00"]) == AT_WORK
+
+
+def test_relative_xdg_config_home_ignored(monkeypatch, tmp_path):
+    from atwork import cli
+    monkeypatch.setenv("XDG_CONFIG_HOME", "relative/dir")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert cli.default_config_paths()[0] == tmp_path / ".config" / "atwork" / "atwork.conf"
+
+
+def test_system_config_used_when_no_user_config(tmp_path, monkeypatch):
+    from atwork import cli
+    system = tmp_path / "etc" / "atwork" / "atwork.conf"
+    system.parent.mkdir(parents=True)
+    system.write_text("[atwork]\ndays = sun\n")
+    monkeypatch.delenv("ATWORK_CONFIG", raising=False)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "empty"))
+    monkeypatch.setattr(cli, "SYSTEM_CONFIG", system)
+    assert main(["--date", "2026-11-01", "--time", "10:00"]) == AT_WORK  # a Sunday
+
+
+def test_user_config_beats_system(tmp_path, monkeypatch):
+    from atwork import cli
+    system = tmp_path / "etc.conf"
+    system.write_text("[atwork]\ndays = sun\n")
+    user = tmp_path / "xdg" / "atwork" / "atwork.conf"
+    user.parent.mkdir(parents=True)
+    user.write_text("[atwork]\ndays = sat\n")
+    monkeypatch.delenv("ATWORK_CONFIG", raising=False)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    monkeypatch.setattr(cli, "SYSTEM_CONFIG", system)
+    assert cli.find_config(None) == user

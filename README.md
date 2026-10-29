@@ -123,8 +123,12 @@ for, in order:
 
 1. the file given with `--config`;
 2. the file named in the `ATWORK_CONFIG` environment variable;
-3. `~/.config/atwork/atwork.conf`;
-4. `/etc/atwork.conf`.
+3. `$XDG_CONFIG_HOME/atwork/atwork.conf` (normally `~/.config/atwork/atwork.conf`);
+4. `/etc/atwork/atwork.conf` for a system-wide setup.
+
+Only the first file found is used. Keeping your holiday files in the same
+directory as the config (e.g. `/etc/atwork/northern-ireland.ics`) means you
+can refer to them by name alone.
 
 ```ini
 [atwork]
